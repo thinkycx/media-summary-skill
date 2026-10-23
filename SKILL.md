@@ -110,9 +110,16 @@ bash ~/.claude/skills/media-summary-2.0.0/scripts/media-summary.sh transcribe --
 
 ## Common Traps
 
+- **依赖版本必须钉死（2026-10-23 实测）**：`pip install faster-whisper==1.1.1` +
+  `av==14.0.0`（faster-whisper 1.2.1 + av 19.x 不兼容：`av.open()` 已删 `metadata_errors`
+  参数，转写启动即崩）。ffmpeg/yt-dlp/you-get 走 brew 或 pip 均可
+- **音乐/MV 内容转写为空**：默认开 VAD（Silero 把歌唱段当非语音滤掉），音乐 MV 会得到
+  0 字符结果——脚本现在会显式报错退出（exit 2），此时加 `--no-vad` 重试
 - faster-whisper 首次运行会下载模型文件（base ~150MB），需要网络；HuggingFace 不可达时从 ModelScope 下载
 - B 站对 yt-dlp 可能返回 412 反爬，备选 you-get；直链下载（axel/curl）对平台视频只会得到 HTML 页面
 - 长视频（>1小时）转写耗时较长，base 模型约 1:10（1 分钟处理 10 分钟音频）；small 模型更准但更慢
 - **语言判断**：中文页面 ≠ 中文内容（如央视专访马斯克实为英文），强制错误语言会产生大量幻觉乱码——发现乱码/大量低置信片段时改用 `--language en` 或 auto 重转
 - Apple Silicon 上 device=auto 使用 CPU（不支持 CUDA），仍然较快
 - 低置信片段（`[?]`）常见于专有名词、品牌名、技术术语
+- **PATH 陷阱**：多 python 共存（系统 3.9 / brew / pyenv）时脚本里的 `python3` 可能解析到
+  没有 faster-whisper 的解释器——统一用一个解释器装依赖并在同一 PATH 下运行

@@ -21,6 +21,7 @@ def load_config():
         "download_tool": "axel",
         "temp_dir": "/tmp/media-summary",
         "keep_temp_files": False,
+        "vad_filter": True,
     }
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
@@ -212,7 +213,8 @@ def get_media_info(file_path):
     return None
 
 
-def transcribe_audio(audio_path, model_name="base", language="zh", device="auto", compute_type="auto"):
+def transcribe_audio(audio_path, model_name="base", language="zh", device="auto",
+                     compute_type="auto", vad_filter=True):
     """Transcribe audio file using faster-whisper. Returns (text, duration, segments_data)."""
     from faster_whisper import WhisperModel
 
@@ -222,7 +224,7 @@ def transcribe_audio(audio_path, model_name="base", language="zh", device="auto"
     segments, info = model.transcribe(
         audio_path,
         language=language,
-        vad_filter=True,
+        vad_filter=vad_filter,
     )
 
     duration = info.duration
@@ -297,6 +299,8 @@ def main():
     parser.add_argument("--keep", action="store_true", help="保留临时文件")
     parser.add_argument("--summary", action="store_true", help="输出时附带元信息 header")
     parser.add_argument("--info-only", action="store_true", help="只输出媒体信息，不转写")
+    parser.add_argument("--no-vad", action="store_true",
+                        help="关掉 VAD 语音活动检测（音乐/歌唱内容被误滤成空结果时用）")
     args = parser.parse_args()
 
     config = load_config()
@@ -309,6 +313,7 @@ def main():
     download_tool = config["download_tool"]
     temp_dir = config["temp_dir"]
     keep = args.keep or config["keep_temp_files"]
+    vad_filter = config.get("vad_filter", True) and not args.no_vad
 
     os.makedirs(temp_dir, exist_ok=True)
     work_dir = tempfile.mkdtemp(dir=temp_dir)
@@ -348,7 +353,16 @@ def main():
             language=language,
             device=device,
             compute_type=compute_type,
+            vad_filter=vad_filter,
         )
+
+        # 空结果保护（2026-10-23）：VAD 把音乐/歌唱段滤光时静默输出空串——
+        # 显式报错并给出 --no-vad 提示，避免下游拿空转写稿继续跑
+        if not text.strip():
+            print("Error: 转写结果为空（0 字符）。若内容含大量音乐/歌唱，"
+                  "VAD 可能把非纯语音段全部滤除，请加 --no-vad 重试。",
+                  file=sys.stderr)
+            sys.exit(2)
 
         # Output
         if args.summary:
