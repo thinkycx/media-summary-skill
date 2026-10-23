@@ -301,6 +301,8 @@ def main():
     parser.add_argument("--info-only", action="store_true", help="只输出媒体信息，不转写")
     parser.add_argument("--no-vad", action="store_true",
                         help="关掉 VAD 语音活动检测（音乐/歌唱内容被误滤成空结果时用）")
+    parser.add_argument("--segments", action="store_true",
+                        help="stdout 追加 JSONL 段落数据（start/end/text），供 video-seek chips 取时间戳")
     args = parser.parse_args()
 
     config = load_config()
@@ -380,6 +382,13 @@ def main():
             print()
 
         print(text)
+
+        # JSONL 段落数据（2026-10-23）：video-seek chips 需要每段 start/end/text
+        # 定位小节起点时间戳；分隔行隔开正文，agent 解析最后一段 JSONL 流即可
+        if args.segments:
+            print("\n===== segments jsonl =====")
+            for seg in quality_info["segments"]:
+                print(json.dumps(seg, ensure_ascii=False))
 
     finally:
         if not keep and os.path.exists(work_dir):

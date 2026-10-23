@@ -62,6 +62,8 @@ bash ~/.claude/skills/media-summary-2.0.0/scripts/media-summary.sh transcribe "h
 bash ~/.claude/skills/media-summary-2.0.0/scripts/media-summary.sh transcribe /path/to/video.mp4
 bash ~/.claude/skills/media-summary-2.0.0/scripts/media-summary.sh transcribe --model small --language en "URL"
 bash ~/.claude/skills/media-summary-2.0.0/scripts/media-summary.sh transcribe --summary "URL"
+# 需要段落时间戳（写 video-seek 跳转 chips 必用）：--segments 追加 JSONL（start/end/text）
+bash ~/.claude/skills/media-summary-2.0.0/scripts/media-summary.sh transcribe --segments "URL"
 ```
 
 ## 定位与分工
