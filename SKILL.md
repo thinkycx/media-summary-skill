@@ -111,12 +111,16 @@ bash ~/.claude/skills/media-summary-2.0.0/scripts/media-summary.sh transcribe --
 ## Common Traps
 
 - **依赖版本必须钉死（2026-10-23 实测）**：`pip install faster-whisper==1.1.1` +
-  `av==14.0.0`（faster-whisper 1.2.1 + av 19.x 不兼容：`av.open()` 已删 `metadata_errors`
-  参数，转写启动即崩）。ffmpeg/yt-dlp/you-get 走 brew 或 pip 均可
+  `av==14.0.0` **+ `requests`**（faster-whisper 1.1.1 未声明 requests 但运行时直接
+  import，干净环境必踩；faster-whisper 1.2.1 + av 19.x 不兼容：`av.open()` 已删
+  `metadata_errors` 参数）。ffmpeg/yt-dlp/you-get 走 brew 或 pip 均可
 - **音乐/MV 内容转写为空**：默认开 VAD（Silero 把歌唱段当非语音滤掉），音乐 MV 会得到
   0 字符结果——脚本现在会显式报错退出（exit 2），此时加 `--no-vad` 重试
-- faster-whisper 首次运行会下载模型文件（base ~150MB），需要网络；HuggingFace 不可达时从 ModelScope 下载
-- B 站对 yt-dlp 可能返回 412 反爬，备选 you-get；直链下载（axel/curl）对平台视频只会得到 HTML 页面
+- **模型下载（国内网络）**：huggingface.co / hf-mirror.com 都可能不可达——用 ModelScope：
+  `pip install modelscope && modelscope download --local_dir ./whisper-base
+  pengzhendong/faster-whisper-base`，然后 `--model ./whisper-base`（本地路径直接支持）
+- **B 站下载通道**：yt-dlp 常被 412 反爬拦截（加 UA/referer 无效）——先 you-get：
+  `you-get -o <dir> <url>`（下载视频后脚本自动提取音频）；axel/curl 直链只会得到 HTML
 - 长视频（>1小时）转写耗时较长，base 模型约 1:10（1 分钟处理 10 分钟音频）；small 模型更准但更慢
 - **语言判断**：中文页面 ≠ 中文内容（如央视专访马斯克实为英文），强制错误语言会产生大量幻觉乱码——发现乱码/大量低置信片段时改用 `--language en` 或 auto 重转
 - Apple Silicon 上 device=auto 使用 CPU（不支持 CUDA），仍然较快
