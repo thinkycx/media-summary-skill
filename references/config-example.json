@@ -1,0 +1,9 @@
+{
+  "whisper_model": "base",
+  "language": "zh",
+  "device": "auto",
+  "compute_type": "auto",
+  "download_tool": "axel",
+  "temp_dir": "/tmp/media-summary",
+  "keep_temp_files": false
+}
